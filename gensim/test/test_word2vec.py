@@ -268,8 +268,7 @@ class TestWord2VecModel(unittest.TestCase):
         model = word2vec.Word2Vec(sentences, min_count=1)
         model.save(tmpf)
         self.models_equal(model, word2vec.Word2Vec.load(tmpf))
-        # test persistence of the KeyedVectors of a model
-        wv = model.wv
+        # test persistence of the KeyedVectors of a modelmodel.wv
         wv.save(tmpf)
         loaded_wv = keyedvectors.KeyedVectors.load(tmpf)
         self.assertTrue(np.allclose(wv.vectors, loaded_wv.vectors))
