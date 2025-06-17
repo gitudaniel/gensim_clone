@@ -23,13 +23,13 @@ from gensim.utils import deprecated
 logger = logging.getLogger(__name__)
 
 
-def resolve_weights(smatrirs):
+def resolve_weights(smartirs):
     """Check the validity of `smartirs` parameters.
 
     Parameters
     ----------
     smartirs : str
-        `smartirs` or SMART (System for the Mechanical Analysis and Retrieval of text)
+        `smartirs` or SMART (System for the Mechanical Analysis and Retrieval of Text)
         Information Retrieval System, a mnemonic scheme for denoting tf-idf weighting
         variants in the vector space model. The mnemonic for representing a combination
         of weights takes the form ddd, where the letters represents the term weighting of the document vector.
@@ -71,7 +71,7 @@ def resolve_weights(smatrirs):
         match = re.match(r"(?P<ddd>...)\.(?P<qqq>...)", smartirs)
         raise ValueError(
             "The notation {ddd}.{qqq} specifies two term-weighting schemes, "
-            " one for collection documents ({ddd}) and one for queries ({qqq}). "
+            "one for collection documents ({ddd}) and one for queries ({qqq}). "
             "You must train two separate tf-idf models.".format(
                 ddd=match.group("ddd"),
                 qqq=match.group("qqq"),
@@ -84,7 +84,7 @@ def resolve_weights(smatrirs):
 
     if w_tf not in 'btnaldL':
         raise ValueError("Expected term frequency weight to be one of 'btnaldL', got {}".format(w_tf))
-    
+
     if w_df not in 'xnftp':
         raise ValueError("Expected inverse document frequency weight to be one of 'xnftp', got {}".format(w_df))
 
@@ -109,7 +109,7 @@ def df2idf(docfreq, totaldocs, log_base=2.0, add=0.0):
     Parameters
     ----------
     docfreq : {int, float}
-        Documents frequency.
+        Document frequency.
     totaldocs : int
         Total number of documents.
     log_base : float, optional
@@ -279,7 +279,7 @@ class TfidfModel(interfaces.TransformationABC):
         id2word : {dict, :class:`~gensim.corpora.Dictionary`}, optional
             Mapping token - id, that was used for converting input data to bag of words format.
         dictionary : :class:`~gensim.corpora.Dictionary`
-            If `dictionary` is specified, it must be a `corpora.Dictionary` object and it will be used
+            If `dictionary` is specified, it must be a `corpora.Dictionary` object and it will be used.
             to directly construct the inverse document frequency mapping (then `corpus`, if specified, is ignored).
         wlocals : callable, optional
             Function for local weighting, default for `wlocal` is :func:`~gensim.utils.identity`
@@ -287,17 +287,17 @@ class TfidfModel(interfaces.TransformationABC):
         wglobal : callable, optional
             Function for global weighting, default is :func:`~gensim.models.tfidfmodel.df2idf`.
         normalize : {bool, callable}, optional
-            Normalize document vectors to unit euclidean length? You can also inject your own functions into `normalize`.
+            Normalize document vectors to unit euclidean length? You can also inject your own function into `normalize`.
         smartirs : str, optional
             SMART (System for the Mechanical Analysis and Retrieval of Text) Information Retrieval System,
             a mnemonic scheme for denoting tf-idf weighting variants in the vector space model.
-            the mnemonic for representing a combination of weights takes the form XYZ,
-            for example 'ntc', 'bpn', and so on, where the letters represent the term weighting of the document vector.
+            The mnemonic for representing a combination of weights takes the form XYZ,
+            for example 'ntc', 'bpn' and so on, where the letters represents the term weighting of the document vector.
 
             Term frequency weighting:
                 * `b` - binary,
                 * `t` or `n` - raw,
-                * `a` - autmented,
+                * `a` - augmented,
                 * `l` - logarithm,
                 * `d` - double logarithm,
                 * `L` - log average.
@@ -318,7 +318,7 @@ class TfidfModel(interfaces.TransformationABC):
             For more information visit `SMART Information Retrieval System
             <https://en.wikipedia.org/wiki/SMART_Information_Retrieval_System>`_.
         pivot : float or None, optional
-            In information retrieval, TF-IDF is biased against long documents [1]_. Pivoted document lenght
+            In information retrieval, TF-IDF is biased against long documents [1]_. Pivoted document length
             normalization solves this problem by changing the norm of a document to `slope * old_norm + (1.0 -
             slope) * pivot`.
 
@@ -339,17 +339,17 @@ class TfidfModel(interfaces.TransformationABC):
             slope) * pivot`.
 
             Setting the `slope` to 0.0 uses only the `pivot` as the norm, and setting the `slope` to 1.0 effectively
-            disables pivoted document length normalization. Singhal [2]_ suggests the `slope` between 0.2 and
+            disables pivoted document length normalization. Singhal [2]_ suggests setting the `slope` between 0.2 and
             0.3 for best results. Default is 0.25.
 
-            See also the blog post at https://rare-technologies.com/pivoted-document-length-normalisation/
+            See also the blog post at https://rare-technologies.com/pivoted-document-length-normalisation/.
 
         References
         ----------
         .. [1] Singhal, A., Buckley, C., & Mitra, M. (1996). `Pivoted Document Length
-           Normalization <http://singhal.info/pivoted-dln.pdf>`_. *SIGIR Forum*, 51, 176-184.
+           Normalization <http://singhal.info/pivoted-dln.pdf>`_. *SIGIR Forum*, 51, 176–184.
         .. [2] Singhal, A. (2001). `Modern information retrieval: A brief overview <http://singhal.info/ieee2001.pdf>`_.
-           *IEEE Data Eng. Bull.*, 24(4), 35-43.
+           *IEEE Data Eng. Bull.*, 24(4), 35–43.
 
         """
         self.id2word = id2word
@@ -396,7 +396,7 @@ class TfidfModel(interfaces.TransformationABC):
             return
         if n_n in 'ub' and callable(self.normalize):
             logger.warning("constructor received smartirs; ignoring normalize")
-        if n_n un 'ub' and not dictionary and not corpus:
+        if n_n in 'ub' and not dictionary and not corpus:
             logger.warning("constructor received no corpus or dictionary; ignoring smartirs[2]")
         elif n_n == "u":
             self.pivot = 1.0 * self.num_nnz / self.num_docs
@@ -407,7 +407,7 @@ class TfidfModel(interfaces.TransformationABC):
 
     @classmethod
     def load(cls, *args, **kwargs):
-        """Load a previously saved TfidfModel class. Handles backwards compatibilty from
+        """Load a previously saved TfidfModel class. Handles backwards compatibility from
         older TfidfModel versions which did not use pivoted document normalization.
 
         """
@@ -430,4 +430,116 @@ class TfidfModel(interfaces.TransformationABC):
         return "%s<num_docs=%s, num_nnz=%s>" % (self.__class__.__name__, self.num_docs, self.num_nnz)
 
     def initialize(self, corpus):
+        """Compute inverse document weights, which will be used to modify term frequencies for documents.
+
+        Parameters
+        ----------
+        corpus : iterable of iterable of (int, int)
+            Input corpus.
+
         """
+        logger.info("collecting document frequencies")
+        dfs = {}
+        numnnz, docno = 0, -1
+
+        for docno, bow in enumerate(corpus):
+            if docno % 10000 == 0:
+                logger.info("PROGRESS: processing document #%i", docno)
+            numnnz += len(bow)
+            for termid, _ in bow:
+                dfs[termid] = dfs.get(termid, 0) + 1
+        # keep some stats about the training corpus
+        self.num_docs = docno + 1
+        self.num_nnz = numnnz
+        self.cfs = None
+        self.dfs = dfs
+        self.term_lengths = None
+        # and finally compute the idf weights
+        self.idfs = precompute_idfs(self.wglobal, self.dfs, self.num_docs)
+        self.add_lifecycle_event(
+            "initialize",
+            msg=(
+                f"calculated IDF weights for {self.num_docs} documents and {max(dfs.keys()) + 1 if dfs else 0}"
+                f" features ({self.num_nnz} matrix non-zeros)"
+            ),
+        )
+
+    def __getitem__(self, bow, eps=1e-12):
+        """Get the tf-idf representation of an input vector and/or corpus.
+
+        Parameters
+        ----------
+        bow : {list of (int, int), iterable of iterable of (int, int)}
+            Input document in the `sparse Gensim bag-of-words format
+            <https://radimrehurek.com/gensim/intro.html#core-concepts>`_,
+            or a streamed corpus of such documents.
+        eps : float
+            Threshold value, will remove all positions that have tf-idf value less than `eps`.
+
+        Returns
+        -------
+        vector : list of (int, float)
+            TfIdf vector, if `bow` is a single document
+        :class:`~gensim.interfaces.TransformedCorpus`
+            TfIdf corpus, if `bow` is a corpus.
+
+        """
+        self.eps = eps
+        # if the input vector is in fact a corpus, return a transformed corpus as a result
+        is_corpus, bow = utils.is_corpus(bow)
+        if is_corpus:
+            return self._apply(bow)
+
+        # unknown (new) terms will be given zero weight (NOT infinity/huge weight,
+        # as strict application of the IDF formula would dictate)
+
+        termid_array, tf_array = [], []
+        for termid, tf in bow:
+            termid_array.append(termid)
+            tf_array.append(tf)
+
+        tf_array = self.wlocal(np.array(tf_array))
+
+        vector = [
+            (termid, tf * self.idfs.get(termid))
+            for termid, tf in zip(termid_array, tf_array) if abs(self.idfs.get(termid, 0.0)) > self.eps
+        ]
+
+        # and finally, normalize the vector either to unit length, or use a
+        # user-defined normalization function
+        if self.smartirs:
+            n_n = self.smartirs[2]
+            if n_n == "n" or (n_n in 'ub' and self.pivot is None):
+                if self.pivot is not None:
+                    _, old_norm = matutils.unitvec(vector, return_norm=True)
+                norm_vector = vector
+            elif n_n == "c":
+                if self.pivot is not None:
+                    _, old_norm = matutils.unitvec(vector, return_norm=True)
+                else:
+                    norm_vector = matutils.unitvec(vector)
+            elif n_n == "u":
+                _, old_norm = matutils.unitvec(vector, return_norm=True, norm='unique')
+            elif n_n == "b":
+                old_norm = sum(freq * (self.term_lens[termid] + 1.0) for termid, freq in bow)
+        else:
+            if self.normalize is True:
+                self.normalize = matutils.unitvec
+            elif self.normalize is False:
+                self.normalize = utils.identity
+
+            if self.pivot is not None:
+                _, old_norm = self.normalize(vector, return_norm=True)
+            else:
+                norm_vector = self.normalize(vector)
+
+        if self.pivot is None:
+            norm_vector = [(termid, weight) for termid, weight in norm_vector if abs(weight) > self.eps]
+        else:
+            pivoted_norm = (1 - self.slope) * self.pivot + self.slope * old_norm
+            norm_vector = [
+                (termid, weight / float(pivoted_norm))
+                for termid, weight in vector
+                if abs(weight / float(pivoted_norm)) > self.eps
+            ]
+        return norm_vector
