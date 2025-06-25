@@ -175,7 +175,7 @@ class LuceneBM25ModelTest(unittest.TestCase):
         actual_cat_weight = weights[self.dictionary.token2id['cat']]
         actual_mouse_weight = weights[self.dictionary.token2id['mouse']]
         actual_lion_weight = weights[self.dictionary.token2id['lion']]
-
+        
         def get_expected_weight(word):
             idf = model.idfs[self.dictionary.token2id[word]]
             denominator = 1 + self.k1 * (1 - self.b + self.b * len(first_document) / model.avgdl)
