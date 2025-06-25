@@ -75,7 +75,7 @@ class OkapiBM25ModelTest(unittest.TestCase):
 
         self.assertAlmostEqual(self.expected_dog_idf, actual_dog_idf)
         self.assertAlmostEqual(self.expected_cat_idf, actual_cat_idf)
-        self.assertAlmostEqual(self.expected_cat_idf, actual_mouse_idf)
+        self.assertAlmostEqual(self.expected_mouse_idf, actual_mouse_idf)
         self.assertAlmostEqual(self.expected_lion_idf, actual_lion_idf)
 
     def test_idfs_from_dictionary(self):
@@ -92,7 +92,7 @@ class OkapiBM25ModelTest(unittest.TestCase):
         self.assertAlmostEqual(self.expected_lion_idf, actual_lion_idf)
 
     def test_score(self):
-        model = OkapiBM25Model(dictionary.self.dictionary, k1=self.k1, b=self.b, epsilon=self.epsilon)
+        model = OkapiBM25Model(dictionary=self.dictionary, k1=self.k1, b=self.b, epsilon=self.epsilon)
 
         first_document = self.documents[0]
         first_bow = self.dictionary.doc2bow(first_document)
@@ -168,7 +168,6 @@ class LuceneBM25ModelTest(unittest.TestCase):
 
         first_document = self.documents[0]
         first_bow = self.dictionary.doc2bow(first_document)
-
         weights = defaultdict(lambda: 0.0)
         weights.update(model[first_bow])
 
@@ -176,7 +175,7 @@ class LuceneBM25ModelTest(unittest.TestCase):
         actual_cat_weight = weights[self.dictionary.token2id['cat']]
         actual_mouse_weight = weights[self.dictionary.token2id['mouse']]
         actual_lion_weight = weights[self.dictionary.token2id['lion']]
-
+        
         def get_expected_weight(word):
             idf = model.idfs[self.dictionary.token2id[word]]
             denominator = 1 + self.k1 * (1 - self.b + self.b * len(first_document) / model.avgdl)
@@ -202,3 +201,69 @@ class AtireBM25ModelTest(unittest.TestCase):
         def get_idf(word):
             frequency = sum(map(lambda document: word in document, self.documents))
             return math.log(len(self.documents) / frequency)
+
+        self.expected_dog_idf = get_idf('dog')
+        self.expected_cat_idf = get_idf('cat')
+        self.expected_mouse_idf = get_idf('mouse')
+        self.expected_lion_idf = get_idf('lion')
+
+    def test_idfs_from_corpus(self):
+        corpus = list(map(self.dictionary.doc2bow, self.documents))
+        model = AtireBM25Model(corpus=corpus, k1=self.k1, b=self.b)
+
+        actual_dog_idf = model.idfs[self.dictionary.token2id['dog']]
+        actual_cat_idf = model.idfs[self.dictionary.token2id['cat']]
+        actual_mouse_idf = model.idfs[self.dictionary.token2id['mouse']]
+        actual_lion_idf = model.idfs[self.dictionary.token2id['lion']]
+
+        self.assertAlmostEqual(self.expected_dog_idf, actual_dog_idf)
+        self.assertAlmostEqual(self.expected_cat_idf, actual_cat_idf)
+        self.assertAlmostEqual(self.expected_mouse_idf, actual_mouse_idf)
+        self.assertAlmostEqual(self.expected_lion_idf, actual_lion_idf)
+
+    def test_idfs_from_dictionary(self):
+        model = AtireBM25Model(dictionary=self.dictionary, k1=self.k1, b=self.b)
+
+        actual_dog_idf = model.idfs[self.dictionary.token2id['dog']]
+        actual_cat_idf = model.idfs[self.dictionary.token2id['cat']]
+        actual_mouse_idf = model.idfs[self.dictionary.token2id['mouse']]
+        actual_lion_idf = model.idfs[self.dictionary.token2id['lion']]
+
+        self.assertAlmostEqual(self.expected_dog_idf, actual_dog_idf)
+        self.assertAlmostEqual(self.expected_cat_idf, actual_cat_idf)
+        self.assertAlmostEqual(self.expected_mouse_idf, actual_mouse_idf)
+        self.assertAlmostEqual(self.expected_lion_idf, actual_lion_idf)
+
+    def test_score(self):
+        model = AtireBM25Model(dictionary=self.dictionary, k1=self.k1, b=self.b)
+
+        first_document = self.documents[0]
+        first_bow = self.dictionary.doc2bow(first_document)
+        weights = defaultdict(lambda: 0.0)
+        weights.update(model[first_bow])
+
+        actual_dog_weight = weights[self.dictionary.token2id['dog']]
+        actual_cat_weight = weights[self.dictionary.token2id['cat']]
+        actual_mouse_weight = weights[self.dictionary.token2id['mouse']]
+        actual_lion_weight = weights[self.dictionary.token2id['lion']]
+
+        def get_expected_weight(word):
+            idf = model.idfs[self.dictionary.token2id[word]]
+            numerator = self.k1 + 1
+            denominator = 1 + self.k1 * (1 - self.b + self.b * len(first_document) / model.avgdl)
+            return idf * numerator / denominator
+
+        expected_dog_weight = get_expected_weight('dog') if 'dog' in first_document else 0.0
+        expected_cat_weight = get_expected_weight('cat') if 'cat' in first_document else 0.0
+        expected_mouse_weight = get_expected_weight('mouse') if 'mouse' in first_document else 0.0
+        expected_lion_weight = get_expected_weight('lion') if 'lion' in first_document else 0.0
+
+        self.assertAlmostEqual(expected_dog_weight, actual_dog_weight)
+        self.assertAlmostEqual(expected_cat_weight, actual_cat_weight)
+        self.assertAlmostEqual(expected_mouse_weight, actual_mouse_weight)
+        self.assertAlmostEqual(expected_lion_weight, actual_lion_weight)
+
+
+if __name__ == '__main__':
+    logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
+    unittest.main()
