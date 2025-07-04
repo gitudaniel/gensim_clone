@@ -28,7 +28,7 @@ public:
 	    res.push_back(word);
 	}
 
-	if (fs.eof()) {
+	if (fs_.eof()) {
 	    is_eof_ = true;
 	}
 	return res;
