@@ -6,6 +6,7 @@
 # Copyright (C) 2021 Radim Rehurek <me@radimrehurek.com>
 # Licensed under the GNU LGPL v2.1 - https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html
 
+
 """Ensemble Latent Dirichlet Allocation (eLDA), an algorithm for extracting reliable topics.
 
 The aim of topic modelling is to find a set of topics that represent the global structure of a corpus of documents. One
@@ -13,7 +14,7 @@ issue that occurs with topics extracted from an NMF or LDA model is reproducibil
 trained repeatedly allowing only the random seed to change, would the same (or similar) topic representation be reliably
 learned. Unreliable topics are undesirable because they are not a good representation of the corpus.
 
-Ensemble LDA addresses this issue by training an ensemble of topic models and throwing out topics that do not reoccur
+Ensemble LDA addresses the issue by training an ensemble of topic models and throwing out topics that do not reoccur
 across the ensemble. In this regard, the topics extracted are more reliable and there is the added benefit over many
 topic models that the user does not need to know the exact number of topics ahead of time.
 
@@ -81,7 +82,7 @@ Increase the ensemble size by adding a new model. Make sure it uses the same dic
 To optimize the ensemble for your specific case, the children can be clustered again using
 different hyperparameters:
 
-.. sourcecode::pycon
+.. sourcecode:: pycon
 
     >>> elda.recluster(eps=0.2)
 
@@ -220,7 +221,7 @@ def _group_by_labels(cbdbscan_topics):
         neighboring_labels of that topic.
 
     """
-    groupded_by_labels = {}
+    grouped_by_labels = {}
 
     for topic in cbdbscan_topics:
         if topic.is_core:
@@ -266,7 +267,7 @@ def mass_masking(a, threshold=None):
 
 
 def rank_masking(a, threshold=None):
-    """Faster maksing method. Return a new binary mask."""
+    """Faster masking method. Returns a new binary mask."""
     if threshold is None:
         threshold = 0.11
 
@@ -299,7 +300,7 @@ def _validate_clusters(clusters, min_cores):
             cluster.is_valid = False
             _remove_from_all_sets(label, sorted_clusters)
 
-    return [cluster for cluster in sorted_cluster if cluster.is_valid]
+    return [cluster for cluster in sorted_clusters if cluster.is_valid]
 
 
 def _generate_topic_models_multiproc(ensemble, num_models, ensemble_workers):
@@ -316,11 +317,11 @@ def _generate_topic_models_multiproc(ensemble, num_models, ensemble_workers):
     ensemble_workers : int
         into how many processes to split the models will be set to max(workers, num_models), to avoid workers that
         are supposed to train 0 models.
-        
+
         to get maximum performance, set to the number of your cores, if non-parallelized models are being used in
         the ensemble (LdaModel).
 
-        For LdaMulticore, the performance gain is small and gets larget for a significantly smaller corpus.
+        For LdaMulticore, the performance gain is small and gets larger for a significantly smaller corpus.
         In that case, ensemble_workers=2 can be used.
 
     """
@@ -333,7 +334,7 @@ def _generate_topic_models_multiproc(ensemble, num_models, ensemble_workers):
     # Don't spawn idle workers:
     workers = min(ensemble_workers, num_models)
 
-    # create worker process:
+    # create worker processes:
     # from what I know this is basically forking with a jump to a target function in each child
     # so modifying the ensemble object will not modify the one in the parent because of no shared memory
     processes = []
@@ -400,7 +401,7 @@ def _generate_topic_models(ensemble, num_models, random_states=None):
 
     assert len(random_states) == num_models
 
-    kwargs = ensemble.gensim.kw.args.copy()
+    kwargs = ensemble.gensim_kw_args.copy()
 
     tm = None  # remember one of the topic models from the following
     # loop, in order to collect some properties from it afterwards.
@@ -415,7 +416,7 @@ def _generate_topic_models(ensemble, num_models, random_states=None):
         ensemble.ttda = np.concatenate([ensemble.ttda, tm.get_topics()])
 
         # only saves the model if it is not "memory friendly"
-        if not ensemble.memory friendly_ttda:
+        if not ensemble.memory_friendly_ttda:
             ensemble.tms += [tm]
 
     # use one of the tms to get some info that will be needed later
@@ -428,7 +429,7 @@ def _generate_topic_models_worker(ensemble, num_models, random_states, pipe):
 
     This is intended to be used inside a subprocess."""
     #
-    # Same as _generate_topic_models, but runs in a separate subprocess and
+    # Same as _generate_topic_models, but runs in a separate subprocess, and
     # sends the updated ensemble state to the parent subprocess via a pipe.
     #
     logger.info(f"spawned worker to generate {num_models} topic models")
@@ -438,7 +439,7 @@ def _generate_topic_models_worker(ensemble, num_models, random_states, pipe):
     # send the ttda that is in the child/workers version of the memory into the pipe
     # available, after _generate_topic_models has been called in the worker
     if ensemble.memory_friendly_ttda:
-        # remember that this code is inside of the worker process memory,
+        # remember that this code is inside the worker process memory,
         # so self.ttda is the ttda of only a chunk of models
         pipe.send(ensemble.ttda)
     else:
@@ -463,6 +464,7 @@ def _calculate_asymmetric_distance_matrix_chunk(
         topic. Each cell in the resulting matrix corresponds to the distance between a topic pair.
     start_index : int
         this function might be used in multiprocessing, so start_index has to be set as ttda1 is a chunk of the
+        complete ttda in that case. start_index would be 0 if ``ttda1 == self.ttda``. When self.ttda is split into
         two pieces, each 100 ttdas long, then start_index should be 100. default is 0
     masking_method : function
 
@@ -543,11 +545,8 @@ def _asymmetric_distance_matrix_worker(
 def _calculate_asymmetric_distance_matrix_multiproc(
     workers,
     entire_ttda,
-    ttdas_sent,
-    n_ttdas,
     masking_method,
     masking_threshold,
-    pipe,
 ):
     processes = []
     pipes = []
@@ -603,7 +602,7 @@ class EnsembleLda(SaveLoad):
 
     def __init__(
             self, topic_model_class="ldamulticore", num_models=3,
-            min_cores=None, # default value from _generate_stable_topics()
+            min_cores=None,  # default value from _generate_stable_topics()
             epsilon=0.1, ensemble_workers=1, memory_friendly_ttda=True,
             min_samples=None, masking_method=mass_masking, masking_threshold=None,
             distance_workers=1, random_state=None, **gensim_kw_args,
@@ -647,7 +646,7 @@ class EnsembleLda(SaveLoad):
             If False, any topic term matrix can be supplied to add_model.
         min_samples : int, optional
             Required int of nearby topics for a topic to be considered as 'core' in the CBDBSCAN clustering.
-        maksing_method : function, optional
+        masking_method : function, optional
             Choose one of :meth:`~gensim.models.ensemblelda.mass_masking` (default) or
             :meth:`~gensim.models.ensemblelda.rank_masking` (percentile, faster).
 
@@ -661,7 +660,7 @@ class EnsembleLda(SaveLoad):
 
             2. rank: forms mask by taking the top ranked terms (by mass) until the 'masking_threshold' is reached.
             For example, a ranking threshold of 0.11 means the top 0.11 terms by weight are used to form a mask.
-        maksing_threshold : float, optional
+        masking_threshold : float, optional
             Default: None, which uses ``0.95`` for "mass", and ``0.11`` for masking_method "rank". In general, too
             small a mask threshold leads to inaccurate calculations (no signal) and too big a mask leads to noisy
             distance calculations. Defaults are often a good sweet spot for this hyperparameter.
@@ -701,7 +700,7 @@ class EnsembleLda(SaveLoad):
                 "ldamulticore": ldamulticore.LdaMulticore
             }
             if topic_model_class not in kinds:
-                raise ValueError:
+                raise ValueError(
                     "topic_model_class should be one of 'lda', 'ldamulticore' or a model "
                     "inheriting from LdaModel"
                 )
@@ -812,7 +811,7 @@ class EnsembleLda(SaveLoad):
             ``classic_model_representation.get_topics() == self.get_topics()``
 
         """
-        logger.info("generating classic gensim model representations based on results from the ensemble")
+        logger.info("generating classic gensim model representation based on results from the ensemble")
 
         sstats_sum = self.sstats_sum
         # if sstats_sum (which is the number of words actually) should be wrong for some fantastic funny reason
@@ -877,7 +876,7 @@ class EnsembleLda(SaveLoad):
         sstats = stable_topics * normalization_factor
         sstats -= eta
 
-        classic model_representation.state.sstats = sstats.astype(np.float32)
+        classic_model_representation.state.sstats = sstats.astype(np.float32)
         # fix expElogbeta.
         classic_model_representation.sync_state()
 
@@ -926,7 +925,7 @@ class EnsembleLda(SaveLoad):
 
             If target is a 2D-array of float values, it assumes 1.
 
-            If the ensemble has ``memory_friendly_data`` set to False, then it will always use the number of models in
+            If the ensemble has ``memory_friendly_ttda`` set to False, then it will always use the number of models in
             the target parameter.
 
         """
@@ -986,7 +985,7 @@ class EnsembleLda(SaveLoad):
 
             # 2. list of ensembles
             elif isinstance(target[0], type(self)):
-                for ensembles in target:
+                for ensemble in target:
                     self.tms += ensemble.tms
                 ttda = np.concatenate([ensemble.ttda for ensemble in target], axis=0)
 
@@ -1004,7 +1003,7 @@ class EnsembleLda(SaveLoad):
             if num_new_models is not None and num_new_models + self.num_models != len(self.tms):
                 logger.info(
                     'num_new_models will be ignored. num_models should match the number of '
-                    'stored models for a memory friendly ensemble'
+                    'stored models for a memory unfriendly ensemble'
                 )
             self.num_models = len(self.tms)
 
@@ -1041,7 +1040,7 @@ class EnsembleLda(SaveLoad):
                 ttda1=self.ttda,
                 ttda2=self.ttda,
                 start_index=0,
-                maksing_method=self.masking_method,
+                masking_method=self.masking_method,
                 masking_threshold=self.masking_threshold,
             )
         else:
@@ -1052,11 +1051,11 @@ class EnsembleLda(SaveLoad):
             self.asymmetric_distance_matrix = _calculate_asymmetric_distance_matrix_multiproc(
                 workers=workers,
                 entire_ttda=self.ttda,
-                masking_method=self.masking_method
+                masking_method=self.masking_method,
                 masking_threshold=self.masking_threshold,
             )
 
-    def _generate_topic_cluster(self, eps=0.1, min_samples=None):
+    def _generate_topic_clusters(self, eps=0.1, min_samples=None):
         """Run the CBDBSCAN algorithm on all the detected topics and label them with label-indices.
 
         The final approval and generation of stable topics is done in ``_generate_stable_topics()``.
@@ -1150,7 +1149,7 @@ class EnsembleLda(SaveLoad):
         Parameters
         ----------
         eps : float
-            epsilon for the CBDBSCAN algorithm, having the same meaning as in classing DBSCAN clustering.
+            epsilon for the CBDBSCAN algorithm, having the same meaning as in classic DBSCAN clustering.
             default: ``0.1``
         min_samples : int
             The minimum number of samples in the neighborhood of a topic to be considered a core in CBDBSCAN.
@@ -1195,10 +1194,10 @@ class EnsembleLda(SaveLoad):
             if len(self.stable_topics) == 0:
                 raise ValueError("no stable topic was detected")
             else:
-                raise ValueError("use generated_gensim_representation() first")
+                raise ValueError("use generate_gensim_representation() first")
 
     def __getitem__(self, i):
-        """See :meth`gensim.models.LdaModel.__getitem__`."""
+        """See :meth:`gensim.models.LdaModel.__getitem__`."""
         self._ensure_gensim_representation()
         return self.classic_model_representation[i]
 
@@ -1219,7 +1218,7 @@ class EnsembleLda(SaveLoad):
 
     @property
     def id2word(self):
-        """Return the :py:class:`gensim.corpora.dictionar.Dictionary` object used in the model."""
+        """Return the :py:class:`gensim.corpora.dictionary.Dictionary` object used in the model."""
         return self.gensim_kw_args["id2word"]
 
 
@@ -1245,7 +1244,7 @@ class CBDBSCAN:
        parent's neighbors. If this fraction is more than 75%, give the candidate the same label as its parent.
        (e.g. in the trivial case there is no parent (or neighbors of that parent), a new incremental label is given)
     6. If candidate is a core, recursively scan the next nearby topic (e.g. scan T_3) labeling the previous topic as
-       the parent and the previous neighbor as the parent_neighbors - repeat steps 2-6:
+       the parent and the previous neighbors as the parent_neighbors - repeat steps 2-6:
 
        2. (e.g. Scan candidate T_3 with respect to parent T_1 that has parent_neighbors T_3, T_4, and T_5)
        3. (e.g. T5 is the only neighbor)
@@ -1260,7 +1259,7 @@ class CBDBSCAN:
     """
 
     def __init__(self, eps, min_samples):
-        """Create a new CBDBSCAN object. Call fit in order to train it on asymmetric distance matrix.
+        """Create a new CBDBSCAN object. Call fit in order to train it on an asymmetric distance matrix.
 
         Parameters
         ----------
@@ -1297,7 +1296,7 @@ class CBDBSCAN:
         min_distance_per_topic_sorted = sorted(min_distance_per_topic, key=lambda distance: distance[0])
         ordered_min_similarity = [index for distance, index in min_distance_per_topic_sorted]
 
-        def scan_topic(topic_index, current_label=None, parent_neigbors=None):
+        def scan_topic(topic_index, current_label=None, parent_neighbors=None):
             """Extend the cluster in one direction.
 
             Results are accumulated to ``self.results``.
@@ -1313,7 +1312,7 @@ class CBDBSCAN:
             neighbors_sorted = sorted(
                 [
                     (distance, index)
-                    for index, distance in enumerate(amatrix._copy[topic_index])
+                    for index, distance in enumerate(amatrix_copy[topic_index])
                 ],
                 key=lambda x: x[0],
             )
@@ -1348,7 +1347,7 @@ class CBDBSCAN:
 
                 topic_clustering_results[topic_index].label = current_label
 
-                for neighboring_topic_index n neighboring_topic_indices:
+                for neighboring_topic_index in neighboring_topic_indices:
                     if topic_clustering_results[neighboring_topic_index].label is None:
                         ordered_min_similarity.remove(neighboring_topic_index)
                         # try to extend the cluster into the direction of the neighbor
@@ -1364,7 +1363,7 @@ class CBDBSCAN:
                 else:
                     topic_clustering_results[topic_index].label = current_label
 
-        # elements are going to be removed form that array in scan_topic, do until it is empty
+        # elements are going to be removed from that array in scan_topic, do until it is empty
         while len(ordered_min_similarity) != 0:
             next_topic_index = ordered_min_similarity.pop(0)
             scan_topic(next_topic_index)
