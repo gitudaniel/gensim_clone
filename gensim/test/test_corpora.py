@@ -687,12 +687,12 @@ class TestWikiCorpus(TestTextCorpus):
     def test_unicode_element(self):
         """
         First unicode article in this sample is
-        1) nana
+        1) папа
         """
         bgwiki = datapath('bgwiki-latest-pages-articles-shortened.xml.bz2')
         corpus = self.corpus_class(bgwiki)
         texts = corpus.get_texts()
-        self.assertTrue(u'nana' in next(texts))
+        self.assertTrue(u'папа' in next(texts))
 
     def test_custom_tokenizer(self):
         """
