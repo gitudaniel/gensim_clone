@@ -58,8 +58,8 @@ class BleiCorpus(IndexedCorpus):
         logger.info("loading corpus from %s", fname)
 
         if fname_vocab is None:
-            fname_base, _ = path.splittext(fname)
-            fname_dir - path.dirname(fname)
+            fname_base, _ = path.splitext(fname)
+            fname_dir = path.dirname(fname)
             for fname_vocab in [
                         utils.smart_extension(fname, '.vocab'),
                         utils.smart_extension(fname, '/vocab.txt'),
